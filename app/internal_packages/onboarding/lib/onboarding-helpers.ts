@@ -152,8 +152,14 @@ export async function expandAccountWithCommonSettings(account: Account) {
     }
     console.log(`Using Mailspring Template: ${JSON.stringify(mstemplate, null, 2)}`);
   } else {
-    console.log(`Using Empty Template`);
-    mstemplate = {};
+    console.log(`Using Fallback Template`);
+    mstemplate = {
+      "imap_host": `imap.${domain}`,
+      "imap_user_format": "email",
+      "smtp_host": `smtp.${domain}`,
+      "smtp_user_format": "email",
+      "container_folder": "",
+    };
   }
 
   let imap_port = Number(mstemplate.imap_port);
@@ -254,6 +260,17 @@ export async function buildGmailAccountFromAuthResponse(code: string) {
 }
 
 export async function buildO365AccountFromAuthResponse(code: string) {
+  return buildMicrosoftAccountFromAuthResponse(code, 'office365');
+}
+
+export async function buildOutlookAccountFromAuthResponse(code: string) {
+  return buildMicrosoftAccountFromAuthResponse(code, 'outlook');
+}
+
+export async function buildMicrosoftAccountFromAuthResponse(
+  code: string,
+  provider: 'outlook' | 'office365'
+) {
   /// Exchange code for an access token
   const { access_token, refresh_token } = await fetchPostWithFormBody<TokenResponse>(
     `https://login.microsoftonline.com/common/oauth2/v2.0/token`,
@@ -285,7 +302,7 @@ export async function buildO365AccountFromAuthResponse(code: string) {
     new Account({
       name: me.displayName,
       emailAddress: me.mail,
-      provider: 'office365',
+      provider: provider,
       settings: {
         refresh_client_id: O365_CLIENT_ID,
         refresh_token: refresh_token,
